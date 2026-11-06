@@ -88,7 +88,43 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .btn:disabled{opacity:.4}
 .stats{display:flex;gap:16px;flex-wrap:wrap;font-size:.82rem;color:var(--muted)}
 .stats b{color:var(--ink);font-weight:500}
-#toast{position:fixed;left:50%;bottom:calc(170px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--paper);
+/* guía de preguntas */
+.prompt{flex:none;background:var(--paper);border-top:1px solid var(--line);padding:8px max(16px,env(safe-area-inset-right)) 4px max(16px,env(safe-area-inset-left))}
+.pbar{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-bottom:6px}
+.pbar i{display:block;height:100%;background:var(--a);width:0;transition:width .3s}
+.ph{display:flex;align-items:center;gap:8px;font-size:.72rem;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;font-weight:600}
+.ph .grow{margin-right:auto}
+.chip{font-size:.68rem;padding:2px 8px;border-radius:10px;text-transform:none;letter-spacing:0;font-weight:500}
+.chip:empty{display:none}
+.chip.done{background:var(--a-soft);color:var(--a)} .chip.skip{background:var(--b-soft);color:var(--b)}
+.mini{border:0;background:none;color:var(--muted);width:34px;height:28px;font-size:1rem}
+.ptext{margin:4px 0 8px;font:600 1.12rem/1.4 var(--body);text-wrap:pretty;max-height:6.2em;overflow-y:auto}
+.pacts{display:flex;gap:8px}
+.pacts button{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 12px;font-weight:500}
+.pacts .grow{flex:1}
+.pacts .go{background:var(--a);border-color:var(--a);color:#fff}
+.pnext{font-size:.8rem;color:var(--muted);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pnext:empty{display:none}
+.prompt.collapsed .ptext{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:2px;font-size:1rem}
+.prompt.collapsed .pacts,.prompt.collapsed .pnext{display:none}
+.qdiv{display:flex;gap:8px;align-items:baseline;margin:18px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--a);color:var(--a);font-weight:600;font-size:.92rem}
+.qdiv .n{font:600 .8rem var(--mono)}
+.qdiv .q{flex:1;min-width:0;overflow-wrap:anywhere}
+.qdiv button{border:0;background:none;color:var(--muted);width:28px}
+textarea{font:inherit;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:10px;font-size:1rem;color:var(--ink);width:100%;resize:vertical}
+.glist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.glist li{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:start;border:1px solid var(--line);border-radius:10px;padding:8px}
+.glist li.cur{border-color:var(--a);box-shadow:inset 0 0 0 1px var(--a)}
+.glist .n{font:500 .8rem var(--mono);color:var(--muted);padding-top:7px;min-width:26px}
+.glist li.done .n{color:var(--a)} .glist li.skip .n{color:var(--b)}
+.glist .gt{min-width:0;padding:4px 6px;border-radius:6px;overflow-wrap:anywhere}
+.glist .gt:focus{background:var(--bg);outline:1px solid var(--line)}
+.glist .ga{display:grid;grid-template-columns:repeat(2,32px);gap:2px}
+.glist .ga button{border:0;background:none;color:var(--muted);height:30px;border-radius:6px;font-size:1rem}
+.glist .ga button:disabled{opacity:.25}
+.glist .none{display:block;color:var(--muted);text-align:center;border-style:dashed}
+dialog{overflow-y:auto}
+#toast{position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top));transform:translateX(-50%);background:var(--ink);color:var(--paper);
   padding:8px 16px;border-radius:20px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
 #toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.dot.live{animation:none}#toast{transition:none}}
@@ -107,9 +143,23 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   <div id="list"></div>
 </main>
 
+<section class="prompt" id="prompt" aria-live="polite">
+  <div class="pbar"><i id="pBar"></i></div>
+  <div class="ph"><span class="grow" id="pNum">Guía de preguntas</span><span class="chip" id="pChip"></span><button class="mini" id="pToggle" aria-label="Achicar o agrandar la guía">▾</button></div>
+  <p class="ptext" id="pText"></p>
+  <div class="pacts">
+    <button id="pPrev" aria-label="Pregunta anterior">‹</button>
+    <button id="pSkip" class="grow">Saltar</button>
+    <button id="pDone" class="grow go">✓ Hecha</button>
+    <button id="pRetry" class="grow" hidden>Repasar saltadas</button>
+    <button id="pEdit" class="grow go" hidden>Cargar preguntas</button>
+  </div>
+  <div class="pnext" id="pNext"></div>
+</section>
 <div class="tools">
-  <button id="newSeg">¶ Párrafo nuevo</button>
-  <button id="markLast">★ Marcar último</button>
+  <button id="newSeg">¶ Párrafo</button>
+  <button id="markLast">★ Marcar</button>
+  <button id="guideBtn">☰ Preguntas</button>
 </div>
 <footer>
   <button class="spk A" id="spkA" aria-pressed="true"><small>HABLA</small><span id="lblA">Entrevistador</span></button>
@@ -150,6 +200,21 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div id="confirm"><button class="btn danger" id="clear" style="width:100%">Nueva entrevista (borrar esta)</button></div>
   </div>
 </dialog>
+<dialog id="guideDlg">
+  <div class="sheet">
+    <h2>Guía de preguntas <button class="icon" id="closeGuide" aria-label="Cerrar">✕</button></h2>
+    <label class="field">Escribí o pegá tus preguntas, una por línea
+      <textarea id="gNew" rows="4" placeholder="¿Cómo empezaste en el deporte?&#10;¿Qué hacés el día antes de competir?"></textarea>
+    </label>
+    <button class="btn primary" id="gAdd">Agregar a la guía</button>
+    <div class="stats"><span id="gCount"></span><span>→ mostrarla ahora · ↑↓ ordenar</span></div>
+    <ol class="glist" id="gList"></ol>
+    <div class="grid2">
+      <button class="btn" id="gReset">Reiniciar progreso</button>
+      <button class="btn danger" id="gClear">Vaciar guía</button>
+    </div>
+  </div>
+</dialog>
 <div id="toast" role="status"></div>
 
 <script>
@@ -162,6 +227,12 @@ const KEY='transcriptor-entrevista-movil-v1';
 
 let state={segs:[],elapsed:0,date:new Date().toISOString(),names:{A:'Entrevistador',B:'Deportista'},lang:'es-AR'};
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&Array.isArray(s.segs))state=Object.assign(state,s)}catch(e){}
+state.qs=state.qs||{};state.cur=state.cur||null;state.pdiv=state.pdiv||null;
+const GKEY='transcriptor-guia-v1';
+let guide=[];try{const g=JSON.parse(localStorage.getItem(GKEY)||'[]');if(Array.isArray(g))guide=g}catch(e){}
+const saveGuide=()=>{try{localStorage.setItem(GKEY,JSON.stringify(guide))}catch(e){}};
+let promptOpen=true;try{promptOpen=localStorage.getItem('transcriptor-guia-abierta')!=='0'}catch(e){}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 
 let speaker='A',recording=false,rec=null,startedAt=0,tick=null,forceNew=true;
 let interim='',sessSpeaker='A',uttStart=null,lastFinal='',restarts=[];
@@ -183,6 +254,15 @@ function render(){
     L.appendChild(e);
   }
   state.segs.forEach((s,i)=>{
+    if(s.kind==='q'){
+      const d=document.createElement('div');d.className='qdiv';
+      const n=document.createElement('span');n.className='n';n.textContent='P'+s.num;
+      const q=document.createElement('span');q.className='q';q.textContent=s.text;
+      const t=document.createElement('span');t.className='t';t.textContent=fmt(s.t);
+      const x=document.createElement('button');x.textContent='×';x.ariaLabel='Quitar separador de pregunta';
+      x.onclick=()=>{state.segs.splice(i,1);save();render()};
+      d.append(n,q,t,x);L.appendChild(d);return;
+    }
     const d=document.createElement('div');d.className='seg '+s.who+(s.star?' star':'');
     const head=document.createElement('div');head.className='head';
     const who=document.createElement('button');who.className='who';who.textContent=state.names[s.who];who.title='Cambiar hablante';
@@ -210,8 +290,9 @@ function render(){
 }
 function meta(){
   $('mDate').textContent=new Date(state.date).toLocaleString('es-AR',{dateStyle:'medium',timeStyle:'short'});
-  $('mDur').textContent=fmt(now());$('mSeg').textContent=state.segs.length;
-  $('mWords').textContent=state.segs.reduce((n,s)=>n+(s.text.trim()?s.text.trim().split(/\s+/).length:0),0);
+  const talk=state.segs.filter(s=>s.kind!=='q');
+  $('mDur').textContent=fmt(now());$('mSeg').textContent=talk.length;
+  $('mWords').textContent=talk.reduce((n,s)=>n+(s.text.trim()?s.text.trim().split(/\s+/).length:0),0);
 }
 function labels(){$('lblA').textContent=state.names.A;$('lblB').textContent=state.names.B}
 
@@ -222,7 +303,11 @@ function addFinal(txt,who){
   lastFinal=txt;
   txt=txt.charAt(0).toUpperCase()+txt.slice(1);
   const last=state.segs[state.segs.length-1];
-  if(forceNew||!last||last.who!==who){state.segs.push({who,t:uttStart??now(),text:txt});forceNew=false}
+  if(forceNew||!last||last.who!==who){
+    // el separador de la pregunta va justo antes de la primera respuesta del entrevistado
+    if(state.pdiv&&who==='B'){state.pdiv.t=uttStart??now();state.segs.push(state.pdiv);state.pdiv=null}
+    state.segs.push({who,t:uttStart??now(),text:txt});forceNew=false;
+  }
   else last.text+=(/[.?!…]$/.test(last.text)?' ':'. ')+txt;
   save();
 }
@@ -298,12 +383,78 @@ function setSpeaker(w){
 
 /* ---------- exportar ---------- */
 function build(md){
-  const segs=state.segs.filter(s=>s.text.trim());
+  meta();
+  const segs=state.segs.filter(s=>s.kind==='q'||s.text.trim());
   const head=md
     ?`# Entrevista\n\n**Fecha:** ${$('mDate').textContent}  \n**Duración:** ${fmt(now())}  \n**Participantes:** ${state.names.A} (entrevistador), ${state.names.B} (entrevistado)\n\n---\n\n`
     :`ENTREVISTA\nFecha: ${$('mDate').textContent}\nDuración: ${fmt(now())}\nParticipantes: ${state.names.A} (entrevistador), ${state.names.B} (entrevistado)\n★ = momento marcado como importante\n\n`;
-  return head+segs.map(s=>{const st=s.star?'★ ':'';return md?`${st}**[${fmt(s.t)}] ${state.names[s.who]}:** ${s.text.trim()}`:`${st}[${fmt(s.t)}] ${state.names[s.who]}: ${s.text.trim()}`}).join('\n\n')+'\n';
+  let out=head+segs.map(s=>{
+    if(s.kind==='q')return md?`### P${s.num}. ${s.text}`:`———— P${s.num}. ${s.text} ————`;
+    const st=s.star?'★ ':'';return md?`${st}**[${fmt(s.t)}] ${state.names[s.who]}:** ${s.text.trim()}`:`${st}[${fmt(s.t)}] ${state.names[s.who]}: ${s.text.trim()}`}).join('\n\n')+'\n';
+  const pend=guide.filter(q=>qStatus(q.id)!=='done');
+  if(guide.length&&pend.length)out+=(md?'\n---\n\n**Preguntas no realizadas:**\n\n':'\n\nPREGUNTAS NO REALIZADAS\n')+pend.map(q=>`- ${q.text}${qStatus(q.id)==='skip'?' (saltada)':''}`).join('\n')+'\n';
+  return out;
 }
+
+/* ---------- guía de preguntas ---------- */
+const qStatus=id=>(state.qs[id]&&state.qs[id].st)||'pending';
+function nextPending(from){
+  for(let k=from+1;k<guide.length;k++)if(qStatus(guide[k].id)==='pending')return k;
+  for(let k=0;k<=from&&k<guide.length;k++)if(qStatus(guide[k].id)==='pending')return k;
+  return -1;
+}
+function curIndex(){
+  let i=guide.findIndex(q=>q.id===state.cur);
+  if(i<0){i=nextPending(-1);state.cur=i>=0?guide[i].id:null}
+  return i;
+}
+function advance(i){const k=nextPending(i);state.cur=k>=0?guide[k].id:null;save();renderPrompt()}
+function renderPrompt(){
+  const n=guide.length,show=(id,v)=>{$(id).hidden=!v};
+  $('prompt').classList.toggle('collapsed',!promptOpen);$('pToggle').textContent=promptOpen?'▾':'▴';
+  const done=guide.filter(q=>qStatus(q.id)==='done').length,skip=guide.filter(q=>qStatus(q.id)==='skip').length;
+  $('pBar').style.width=n?((done+skip)/n*100)+'%':'0';
+  $('pChip').className='chip';$('pChip').textContent='';$('pNext').textContent='';
+  if(!n){
+    $('pNum').textContent='Guía de preguntas';
+    $('pText').textContent='Cargá las preguntas que querés hacer y te las voy mostrando durante la entrevista.';
+    ['pPrev','pSkip','pDone','pRetry'].forEach(x=>show(x,false));show('pEdit',true);return;
+  }
+  const i=curIndex();
+  if(i<0){
+    $('pNum').textContent='Guía completa';
+    $('pText').textContent=`${done} hechas · ${skip} saltadas`;
+    show('pPrev',true);show('pSkip',false);show('pDone',false);show('pRetry',skip>0);show('pEdit',false);return;
+  }
+  const q=guide[i],st=qStatus(q.id);
+  $('pNum').textContent=`Pregunta ${i+1} de ${n} · ${done} hechas`;
+  if(st!=='pending'){$('pChip').className='chip '+st;$('pChip').textContent=st==='done'?'Hecha':'Saltada'}
+  $('pText').textContent=q.text;
+  show('pPrev',true);$('pPrev').disabled=i===0;show('pSkip',true);show('pDone',true);show('pRetry',false);show('pEdit',false);
+  const k=nextPending(i);
+  $('pNext').textContent=k>=0&&k!==i?'Sigue: '+guide[k].text:(k===i?'':'Es la última pendiente');
+}
+function renderGuide(){
+  const L=$('gList'),ci=curIndex();L.textContent='';
+  $('gCount').textContent=guide.length?`${guide.length} preguntas`:'';
+  if(!guide.length){const e=document.createElement('li');e.className='none';e.textContent='Todavía no hay preguntas.';L.appendChild(e);return}
+  guide.forEach((q,i)=>{
+    const st=qStatus(q.id),li=document.createElement('li');li.className=st+(i===ci?' cur':'');
+    const n=document.createElement('span');n.className='n';n.textContent=(st==='done'?'✓':st==='skip'?'↷':'')+(i+1);
+    const t=document.createElement('div');t.className='gt';t.contentEditable='true';t.textContent=q.text;
+    t.oninput=()=>{q.text=t.textContent.trim();saveGuide();renderPrompt()};
+    t.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();t.blur()}};
+    const a=document.createElement('div');a.className='ga';
+    const mk=(label,aria,fn,dis)=>{const b=document.createElement('button');b.textContent=label;b.ariaLabel=aria;b.disabled=!!dis;b.onclick=fn;a.appendChild(b)};
+    const move=d=>{[guide[i],guide[i+d]]=[guide[i+d],guide[i]];saveGuide();renderGuide();renderPrompt()};
+    mk('↑','Subir',()=>move(-1),i===0);
+    mk('→','Mostrar ahora',()=>{state.cur=q.id;save();renderPrompt();$('guideDlg').close();toast('Pregunta '+(i+1))});
+    mk('↓','Bajar',()=>move(1),i===guide.length-1);
+    mk('×','Eliminar',()=>{guide.splice(i,1);delete state.qs[q.id];if(state.cur===q.id)state.cur=null;saveGuide();save();renderGuide();renderPrompt()});
+    li.append(n,t,a);L.appendChild(li);
+  });
+}
+function openGuide(){renderGuide();$('guideDlg').showModal()}
 const stamp=()=>new Date(state.date).toISOString().slice(0,16).replace(/[:T]/g,'-');
 function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}
 async function shareText(){
@@ -325,7 +476,37 @@ $('rec').onclick=()=>recording?stop():start();
 $('spkA').onclick=()=>setSpeaker('A');
 $('spkB').onclick=()=>setSpeaker('B');
 $('newSeg').onclick=()=>{forceNew=true;if(recording&&rec){try{rec.stop()}catch(e){}}toast('Párrafo nuevo')};
-$('markLast').onclick=()=>{const s=state.segs[state.segs.length-1];if(!s){toast('Todavía no hay texto');return}s.star=true;save();render();toast('Marcado ★')};
+$('pDone').onclick=()=>{
+  const i=curIndex();if(i<0)return;const q=guide[i];
+  state.qs[q.id]={st:'done',t:now()};
+  if(state.pdiv)state.segs.push(state.pdiv); // la anterior quedó sin respuesta transcripta
+  state.pdiv={kind:'q',qid:q.id,num:i+1,text:q.text,t:now()};
+  if(!recording){state.segs.push(state.pdiv);state.pdiv=null}
+  setSpeaker('B');forceNew=true;advance(i);render();
+  if(navigator.vibrate)navigator.vibrate(20);
+};
+$('pSkip').onclick=()=>{const i=curIndex();if(i<0)return;state.qs[guide[i].id]={st:'skip'};advance(i);toast('Pregunta saltada')};
+$('pPrev').onclick=()=>{const i=curIndex(),j=i<0?guide.length-1:i-1;if(j>=0){state.cur=guide[j].id;save();renderPrompt()}};
+$('pRetry').onclick=()=>{guide.forEach(q=>{if(qStatus(q.id)==='skip')delete state.qs[q.id]});state.cur=null;save();renderPrompt()};
+$('pEdit').onclick=openGuide;
+$('guideBtn').onclick=openGuide;
+$('pToggle').onclick=()=>{promptOpen=!promptOpen;try{localStorage.setItem('transcriptor-guia-abierta',promptOpen?'1':'0')}catch(e){}renderPrompt()};
+$('closeGuide').onclick=()=>$('guideDlg').close();
+$('guideDlg').addEventListener('click',e=>{if(e.target===$('guideDlg'))$('guideDlg').close()});
+$('gAdd').onclick=()=>{
+  const lines=$('gNew').value.split(/\n+/).map(s=>s.replace(/^\s*(\d+\s*[.)\-:]|[-•*·])\s*/,'').trim()).filter(Boolean);
+  if(!lines.length){toast('Escribí al menos una pregunta');return}
+  lines.forEach(text=>guide.push({id:uid(),text}));saveGuide();$('gNew').value='';renderGuide();renderPrompt();
+  toast(lines.length===1?'Pregunta agregada':lines.length+' preguntas agregadas');
+};
+$('gReset').onclick=()=>{state.qs={};state.cur=null;state.pdiv=null;save();renderGuide();renderPrompt();toast('Progreso reiniciado')};
+let gArm=null;
+$('gClear').onclick=()=>{
+  if(!gArm){$('gClear').textContent='Tocá de nuevo para vaciar';gArm=setTimeout(()=>{gArm=null;$('gClear').textContent='Vaciar guía'},3000);return}
+  clearTimeout(gArm);gArm=null;$('gClear').textContent='Vaciar guía';
+  guide=[];state.qs={};state.cur=null;state.pdiv=null;saveGuide();save();renderGuide();renderPrompt();
+};
+$('markLast').onclick=()=>{const s=[...state.segs].reverse().find(x=>x.kind!=='q');if(!s){toast('Todavía no hay texto');return}s.star=true;save();render();toast('Marcado ★')};
 $('menuBtn').onclick=()=>{meta();$('menu').showModal()};
 $('closeMenu').onclick=()=>$('menu').close();
 $('menu').addEventListener('click',e=>{if(e.target===$('menu'))$('menu').close()});
@@ -348,7 +529,7 @@ function askClear(){
   c.innerHTML='<div class="grid2"><button class="btn danger" id="yes">Sí, borrar todo</button><button class="btn" id="no">Cancelar</button></div>';
   const reset=()=>{c.innerHTML='<button class="btn danger" id="clear" style="width:100%">Nueva entrevista (borrar esta)</button>';$('clear').onclick=askClear};
   $('no').onclick=reset;
-  $('yes').onclick=()=>{stop();state={segs:[],elapsed:0,date:new Date().toISOString(),names:state.names,lang:state.lang};
+  $('yes').onclick=()=>{stop();state={segs:[],elapsed:0,date:new Date().toISOString(),names:state.names,lang:state.lang,qs:{},cur:null,pdiv:null};renderPrompt();
     chunks=[];audioBlob=null;$('dlAudio').disabled=true;$('clock').textContent='00:00:00';save();render();meta();reset();$('menu').close();toast('Lista para una nueva entrevista')};
 }
 $('clear').onclick=askClear;
@@ -362,7 +543,7 @@ window.addEventListener('pagehide',save);
 
 if(!SR)warn('Este navegador no tiene reconocimiento de voz. En Android usá Chrome; en iPhone, Safari (con Siri/Dictado activado en Ajustes).');
 else if(location.protocol==='file:'&&isMobile)warn('Abriste el archivo localmente: en el celular el micrófono solo funciona si la página está publicada en una dirección https://.');
-labels();$('clock').textContent=fmt(state.elapsed);render();
+labels();$('clock').textContent=fmt(state.elapsed);render();renderPrompt();
 </script>
 </body>
 </html>
