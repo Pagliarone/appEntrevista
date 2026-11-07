@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&family=Fraunces:opsz,wght@9..144,600&display=swap">
 <style>
-/* Layout: una pantalla — cabecera fina, transcripción con scroll, barra inferior para el pulgar */
+/* Layout: una pantalla — cabecera fina, transcripción con scroll, guía de preguntas y barra inferior para el pulgar */
 :root{
   --bg:#f3f4f2; --paper:#ffffff; --ink:#1d2321; --muted:#66706b; --line:#dde1de;
   --a:#1f6f5c; --a-soft:#e2efea; --b:#8a4b14; --b-soft:#f5ebe0; --rec:#c2352b; --star:#c99a06;
@@ -26,18 +26,22 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%}
 body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--body);display:flex;flex-direction:column;height:100dvh;overflow:hidden}
-button,select,input{font:inherit;color:inherit}
+button,select,input,textarea{font:inherit;color:inherit}
 button{cursor:pointer;touch-action:manipulation}
+button:disabled{opacity:.35;cursor:default}
 :focus-visible{outline:2px solid var(--a);outline-offset:2px}
+[hidden]{display:none!important}
 
-header{flex:none;display:flex;align-items:center;gap:10px;background:var(--paper);border-bottom:1px solid var(--line);
-  padding:calc(10px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left))}
-h1{font:600 1.1rem var(--display);margin:0;margin-right:auto;letter-spacing:-.01em}
+header{flex:none;display:flex;align-items:center;gap:8px;background:var(--paper);border-bottom:1px solid var(--line);
+  padding:calc(8px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 8px max(16px,env(safe-area-inset-left))}
+#title{border:0;background:none;padding:0;margin-right:auto;font:600 1.1rem var(--display);letter-spacing:-.01em;text-align:left;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .clock{font:500 1rem var(--mono);font-variant-numeric:tabular-nums}
-.dot{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--line);flex:none}
 .dot.live{background:var(--rec);animation:p 1.2s infinite}
 @keyframes p{50%{opacity:.25}}
-.icon{border:1px solid var(--line);background:var(--paper);border-radius:8px;width:40px;height:40px;font-size:1.2rem;line-height:1}
+.meter{width:6px;height:20px;border-radius:3px;background:var(--line);position:relative;overflow:hidden;flex:none}
+.meter i{position:absolute;left:0;right:0;bottom:0;height:calc(var(--lv,0)*100%);background:var(--a);transition:height .08s}
+.icon{border:1px solid var(--line);background:var(--paper);border-radius:8px;width:40px;height:40px;font-size:1.1rem;line-height:1;flex:none}
 
 main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px max(16px,env(safe-area-inset-right)) 16px max(16px,env(safe-area-inset-left))}
 .warn{background:var(--b-soft);color:var(--b);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:.9rem}
@@ -52,18 +56,42 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px max(16
 .acts button{border:0;background:none;color:var(--muted);width:32px;height:32px;font-size:1.05rem;border-radius:6px}
 .acts .st[aria-pressed=true]{color:var(--star)}
 .txt{grid-column:1;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:1.05rem;border-radius:4px}
-.txt[contenteditable=true]{background:transparent}
 .txt[contenteditable=true]:focus{background:var(--bg);outline:1px solid var(--line)}
 .ghost{opacity:.6;font-style:italic;border-style:dashed}
-.empty{color:var(--muted);text-align:center;padding:40px 12px;line-height:1.7}
+.empty{color:var(--muted);text-align:center;padding:32px 12px;line-height:1.7}
 .empty b{color:var(--ink)}
+.qdiv{display:flex;gap:8px;align-items:baseline;margin:18px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--a);color:var(--a);font-weight:600;font-size:.92rem}
+.qdiv .n{font:600 .8rem var(--mono)}
+.qdiv .q{flex:1;min-width:0;overflow-wrap:anywhere}
+.qdiv button{border:0;background:none;color:var(--muted);width:28px}
+
+/* guía de preguntas */
+.prompt{flex:none;background:var(--paper);border-top:1px solid var(--line);padding:8px max(16px,env(safe-area-inset-right)) 4px max(16px,env(safe-area-inset-left));touch-action:pan-y}
+.pbar{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-bottom:6px}
+.pbar i{display:block;height:100%;background:var(--a);width:0;transition:width .3s}
+.ph{display:flex;align-items:center;gap:8px}
+#pNum{border:0;background:none;padding:4px 0;margin-right:auto;font-size:.72rem;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;font-weight:600;text-align:left}
+#pNum::after{content:" ☰";letter-spacing:0}
+.chip{font-size:.68rem;padding:2px 8px;border-radius:10px;font-weight:500}
+.chip:empty{display:none}
+.chip.done{background:var(--a-soft);color:var(--a)} .chip.skip{background:var(--b-soft);color:var(--b)}
+.mini{border:0;background:none;color:var(--muted);width:34px;height:28px;font-size:1rem}
+.ptext{margin:2px 0 8px;font:600 1.12rem/1.4 var(--body);text-wrap:pretty;max-height:6.2em;overflow-y:auto}
+.pacts{display:flex;gap:8px}
+.pacts button{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 12px;font-weight:500;min-height:46px}
+.pacts .nav{width:48px;flex:none;font-size:1.25rem;padding:0}
+.pacts .grow{flex:1}
+.pacts .go{background:var(--a);border-color:var(--a);color:#fff}
+.pnext{font-size:.8rem;color:var(--muted);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pnext:empty{display:none}
+.prompt.collapsed .ptext{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:2px;font-size:1rem}
+.prompt.collapsed .pacts,.prompt.collapsed .pnext{display:none}
 
 .tools{flex:none;display:flex;gap:8px;justify-content:center;padding:8px max(16px,env(safe-area-inset-right)) 0 max(16px,env(safe-area-inset-left));background:var(--paper);border-top:1px solid var(--line)}
 .tools button{border:1px solid var(--line);background:var(--bg);border-radius:20px;padding:6px 14px;font-size:.88rem}
 footer{flex:none;display:grid;grid-template-columns:1fr 76px 1fr;gap:10px;align-items:center;background:var(--paper);
   padding:10px max(16px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
-.spk{height:64px;border-radius:14px;border:2px solid var(--line);background:var(--bg);font-weight:600;font-size:.95rem;padding:0 8px;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.spk{height:64px;border-radius:14px;border:2px solid var(--line);background:var(--bg);font-weight:600;font-size:.95rem;padding:0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .spk small{display:block;font-weight:400;font-size:.7rem;color:var(--muted);letter-spacing:.04em}
 .spk.A[aria-pressed=true]{background:var(--a);border-color:var(--a);color:#fff}
 .spk.B[aria-pressed=true]{background:var(--b);border-color:var(--b);color:#fff}
@@ -72,47 +100,24 @@ footer{flex:none;display:grid;grid-template-columns:1fr 76px 1fr;gap:10px;align-
 #rec i{display:block;width:26px;height:26px;border-radius:50%;background:#fff;transition:border-radius .15s}
 #rec.on i{border-radius:5px;width:24px;height:24px}
 
-dialog{border:0;border-radius:16px 16px 0 0;padding:0;margin:auto auto 0;width:100%;max-width:560px;background:var(--paper);color:var(--ink);max-height:90dvh}
+dialog{border:0;border-radius:16px 16px 0 0;padding:0;margin:auto auto 0;width:100%;max-width:560px;background:var(--paper);color:var(--ink);max-height:92dvh;overflow-y:auto}
 dialog::backdrop{background:rgba(0,0,0,.45)}
 .sheet{padding:18px max(18px,env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));display:grid;gap:14px}
-.sheet h2{font:600 1.1rem var(--display);margin:0;display:flex;justify-content:space-between;align-items:center}
+.sheet h2{font:600 1.1rem var(--display);margin:0;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sheet h3{margin:6px 0 0;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .field{display:grid;gap:4px;font-size:.85rem;color:var(--muted)}
-.field input,.field select{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:10px;font-size:1rem;color:var(--ink);width:100%}
-.check{display:flex;gap:10px;align-items:flex-start;font-size:.9rem}
-.check input{width:20px;height:20px;margin-top:2px}
-.check span small{display:block;color:var(--muted)}
+.field input,.field select,textarea{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:10px;font-size:1rem;color:var(--ink);width:100%}
+textarea{resize:vertical}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .btn{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:12px;font-weight:500}
 .btn.primary{background:var(--a);border-color:var(--a);color:#fff}
 .btn.danger{color:var(--rec)}
-.btn:disabled{opacity:.4}
-.stats{display:flex;gap:16px;flex-wrap:wrap;font-size:.82rem;color:var(--muted)}
+.btn small{display:block;font-weight:400;font-size:.75rem;opacity:.75}
+.stats{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:.82rem;color:var(--muted)}
 .stats b{color:var(--ink);font-weight:500}
-/* guía de preguntas */
-.prompt{flex:none;background:var(--paper);border-top:1px solid var(--line);padding:8px max(16px,env(safe-area-inset-right)) 4px max(16px,env(safe-area-inset-left))}
-.pbar{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-bottom:6px}
-.pbar i{display:block;height:100%;background:var(--a);width:0;transition:width .3s}
-.ph{display:flex;align-items:center;gap:8px;font-size:.72rem;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;font-weight:600}
-.ph .grow{margin-right:auto}
-.chip{font-size:.68rem;padding:2px 8px;border-radius:10px;text-transform:none;letter-spacing:0;font-weight:500}
-.chip:empty{display:none}
-.chip.done{background:var(--a-soft);color:var(--a)} .chip.skip{background:var(--b-soft);color:var(--b)}
-.mini{border:0;background:none;color:var(--muted);width:34px;height:28px;font-size:1rem}
-.ptext{margin:4px 0 8px;font:600 1.12rem/1.4 var(--body);text-wrap:pretty;max-height:6.2em;overflow-y:auto}
-.pacts{display:flex;gap:8px}
-.pacts button{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 12px;font-weight:500}
-.pacts .grow{flex:1}
-.pacts .go{background:var(--a);border-color:var(--a);color:#fff}
-.pnext{font-size:.8rem;color:var(--muted);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pnext:empty{display:none}
-.prompt.collapsed .ptext{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:2px;font-size:1rem}
-.prompt.collapsed .pacts,.prompt.collapsed .pnext{display:none}
-.qdiv{display:flex;gap:8px;align-items:baseline;margin:18px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--a);color:var(--a);font-weight:600;font-size:.92rem}
-.qdiv .n{font:600 .8rem var(--mono)}
-.qdiv .q{flex:1;min-width:0;overflow-wrap:anywhere}
-.qdiv button{border:0;background:none;color:var(--muted);width:28px}
-textarea{font:inherit;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:10px;font-size:1rem;color:var(--ink);width:100%;resize:vertical}
-.glist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.note{font-size:.8rem;color:var(--muted);margin:0}
+
+.glist,.ilist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .glist li{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:start;border:1px solid var(--line);border-radius:10px;padding:8px}
 .glist li.cur{border-color:var(--a);box-shadow:inset 0 0 0 1px var(--a)}
 .glist .n{font:500 .8rem var(--mono);color:var(--muted);padding-top:7px;min-width:26px}
@@ -121,20 +126,30 @@ textarea{font:inherit;border:1px solid var(--line);background:var(--bg);border-r
 .glist .gt:focus{background:var(--bg);outline:1px solid var(--line)}
 .glist .ga{display:grid;grid-template-columns:repeat(2,32px);gap:2px}
 .glist .ga button{border:0;background:none;color:var(--muted);height:30px;border-radius:6px;font-size:1rem}
-.glist .ga button:disabled{opacity:.25}
-.glist .none{display:block;color:var(--muted);text-align:center;border-style:dashed}
-dialog{overflow-y:auto}
-#toast{position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top));transform:translateX(-50%);background:var(--ink);color:var(--paper);
-  padding:8px 16px;border-radius:20px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
+.none{display:block!important;color:var(--muted);text-align:center;border:1px dashed var(--line);border-radius:10px;padding:14px}
+.ilist li{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px}
+.ilist li.cur{border-color:var(--a)}
+.ilist .it{display:flex;gap:8px;align-items:baseline;font-weight:600}
+.ilist .it span{margin-right:auto;overflow-wrap:anywhere}
+.ilist .tag{font-size:.7rem;font-weight:500;padding:2px 8px;border-radius:10px;background:var(--a-soft);color:var(--a)}
+.ilist .tag.open{background:var(--b-soft);color:var(--b)}
+.ilist .im{font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.ilist .ib{display:flex;flex-wrap:wrap;gap:6px}
+.ilist .ib button{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:7px 10px;font-size:.85rem}
+.ilist .ib .del{color:var(--rec);margin-left:auto}
+#toast{position:fixed;left:50%;top:calc(66px + env(safe-area-inset-top));transform:translateX(-50%);background:var(--ink);color:var(--paper);
+  padding:8px 16px;border-radius:20px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s;z-index:10;max-width:90vw;text-align:center}
 #toast.show{opacity:1}
-@media (prefers-reduced-motion:reduce){.dot.live{animation:none}#toast{transition:none}}
+@media (prefers-reduced-motion:reduce){.dot.live{animation:none}#toast,.pbar i{transition:none}}
 </style>
 </head>
 <body>
 <header>
-  <h1>Entrevista</h1>
+  <button id="title" aria-label="Datos de la entrevista">Sujeto 1</button>
+  <span class="meter" id="meter" hidden title="Nivel del audio que se está grabando"><i></i></span>
   <span class="dot" id="dot"></span>
   <span class="clock" id="clock">00:00:00</span>
+  <button class="icon" id="libBtn" aria-label="Entrevistas guardadas">▤</button>
   <button class="icon" id="menuBtn" aria-label="Opciones y exportar">⋯</button>
 </header>
 
@@ -145,14 +160,15 @@ dialog{overflow-y:auto}
 
 <section class="prompt" id="prompt" aria-live="polite">
   <div class="pbar"><i id="pBar"></i></div>
-  <div class="ph"><span class="grow" id="pNum">Guía de preguntas</span><span class="chip" id="pChip"></span><button class="mini" id="pToggle" aria-label="Achicar o agrandar la guía">▾</button></div>
+  <div class="ph"><button id="pNum">Guía de preguntas</button><span class="chip" id="pChip"></span><button class="mini" id="pToggle" aria-label="Achicar o agrandar la guía">▾</button></div>
   <p class="ptext" id="pText"></p>
   <div class="pacts">
-    <button id="pPrev" aria-label="Pregunta anterior">‹</button>
+    <button id="pPrev" class="nav" aria-label="Pregunta anterior">‹</button>
     <button id="pSkip" class="grow">Saltar</button>
     <button id="pDone" class="grow go">✓ Hecha</button>
     <button id="pRetry" class="grow" hidden>Repasar saltadas</button>
     <button id="pEdit" class="grow go" hidden>Cargar preguntas</button>
+    <button id="pFwd" class="nav" aria-label="Pregunta siguiente">›</button>
   </div>
   <div class="pnext" id="pNext"></div>
 </section>
@@ -164,45 +180,86 @@ dialog{overflow-y:auto}
 <footer>
   <button class="spk A" id="spkA" aria-pressed="true"><small>HABLA</small><span id="lblA">Entrevistador</span></button>
   <button id="rec" aria-label="Grabar"><i></i></button>
-  <button class="spk B" id="spkB" aria-pressed="false"><small>HABLA</small><span id="lblB">Deportista</span></button>
+  <button class="spk B" id="spkB" aria-pressed="false"><small>HABLA</small><span id="lblB">Sujeto 1</span></button>
 </footer>
 
+<!-- Esta entrevista + ajustes -->
 <dialog id="menu">
   <div class="sheet">
-    <h2>Opciones <button class="icon" id="closeMenu" aria-label="Cerrar">✕</button></h2>
+    <h2>Esta entrevista <button class="icon" data-close aria-label="Cerrar">✕</button></h2>
+    <label class="field">Entrevistado<input id="subject" autocomplete="off"></label>
     <div class="stats">
       <span>Fecha: <b id="mDate"></b></span>
       <span>Duración: <b id="mDur">00:00:00</b></span>
-      <span>Párrafos: <b id="mSeg">0</b></span>
       <span>Palabras: <b id="mWords">0</b></span>
+      <span>Audio: <b id="mAudio">—</b></span>
     </div>
     <div class="grid2">
-      <label class="field">Entrevistador<input id="nameA" autocomplete="off"></label>
-      <label class="field">Entrevistado<input id="nameB" autocomplete="off"></label>
+      <button class="btn" id="dlAudio">Descargar audio</button>
+      <button class="btn" id="dlTxt">Descargar texto</button>
+      <button class="btn" id="shareAll">Compartir texto + audio</button>
+      <button class="btn" id="copyTxt">Copiar texto</button>
     </div>
-    <label class="field">Idioma
-      <select id="lang">
-        <option value="es-AR">Español (Argentina)</option>
-        <option value="es-ES">Español (España)</option>
-        <option value="es-MX">Español (México)</option>
-        <option value="es-US">Español (EE. UU.)</option>
-        <option value="en-US">English (US)</option>
-        <option value="pt-BR">Português (Brasil)</option>
+    <button class="btn primary" id="finish">Terminar y guardar<small>Guarda audio y transcripción, y te deja empezar con el siguiente</small></button>
+    <h3>Ajustes</h3>
+    <label class="field">Qué grabar
+      <select id="mode">
+        <option value="both">Transcribir y grabar audio</option>
+        <option value="text">Solo transcribir</option>
+        <option value="audio">Solo grabar audio (transcribís después con Gemini)</option>
       </select>
     </label>
-    <label class="check"><input type="checkbox" id="saveAudio"><span>Grabar audio en paralelo<small>En muchos celulares el micrófono no se puede usar para las dos cosas a la vez; si la transcripción falla, desactivalo.</small></span></label>
+    <p class="note" id="modeNote"></p>
     <div class="grid2">
-      <button class="btn primary" id="shareTxt">Compartir texto</button>
-      <button class="btn" id="copyTxt">Copiar texto</button>
-      <button class="btn" id="dlMd">Descargar .md</button>
-      <button class="btn" id="dlAudio" disabled>Descargar audio</button>
+      <label class="field">Tu nombre<input id="interviewer" autocomplete="off"></label>
+      <label class="field">Idioma
+        <select id="lang">
+          <option value="es-AR">Español (Argentina)</option>
+          <option value="es-ES">Español (España)</option>
+          <option value="es-MX">Español (México)</option>
+          <option value="es-US">Español (EE. UU.)</option>
+          <option value="en-US">English (US)</option>
+          <option value="pt-BR">Português (Brasil)</option>
+        </select>
+      </label>
     </div>
-    <div id="confirm"><button class="btn danger" id="clear" style="width:100%">Nueva entrevista (borrar esta)</button></div>
   </div>
 </dialog>
+
+<!-- Entrevista guardada -->
+<dialog id="saved">
+  <div class="sheet">
+    <h2><span id="svTitle">Entrevista guardada</span> <button class="icon" data-close aria-label="Cerrar">✕</button></h2>
+    <div class="stats" id="svStats"></div>
+    <p class="note">Ya quedó guardada en este celular (la encontrás en ▤). Te conviene bajar una copia antes de seguir.</p>
+    <div class="grid2">
+      <button class="btn" id="svAudio">Descargar audio</button>
+      <button class="btn" id="svTxt">Descargar texto</button>
+    </div>
+    <button class="btn" id="svShare">Compartir texto + audio (Drive, WhatsApp…)</button>
+    <h3>Siguiente entrevista</h3>
+    <label class="field">Entrevistado<input id="svNext" autocomplete="off"></label>
+    <button class="btn primary" id="svNew">Empezar nueva entrevista</button>
+  </div>
+</dialog>
+
+<!-- Biblioteca -->
+<dialog id="lib">
+  <div class="sheet">
+    <h2>Entrevistas guardadas <button class="icon" data-close aria-label="Cerrar">✕</button></h2>
+    <div class="grid2">
+      <button class="btn primary" id="libNew">+ Nueva entrevista</button>
+      <button class="btn" id="libAll">Exportar todas (texto)</button>
+    </div>
+    <ul class="ilist" id="iList"></ul>
+    <p class="note" id="libSpace"></p>
+  </div>
+</dialog>
+
+<!-- Guía de preguntas -->
 <dialog id="guideDlg">
   <div class="sheet">
-    <h2>Guía de preguntas <button class="icon" id="closeGuide" aria-label="Cerrar">✕</button></h2>
+    <h2>Guía de preguntas <button class="icon" data-close aria-label="Cerrar">✕</button></h2>
     <label class="field">Escribí o pegá tus preguntas, una por línea
       <textarea id="gNew" rows="4" placeholder="¿Cómo empezaste en el deporte?&#10;¿Qué hacés el día antes de competir?"></textarea>
     </label>
@@ -223,49 +280,109 @@ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 const UA=navigator.userAgent;
 const isIOS=/iPhone|iPad|iPod/.test(UA)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const isMobile=isIOS||/Android|Mobile/i.test(UA);
-const KEY='transcriptor-entrevista-movil-v1';
-
-let state={segs:[],elapsed:0,date:new Date().toISOString(),names:{A:'Entrevistador',B:'Deportista'},lang:'es-AR'};
-try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&Array.isArray(s.segs))state=Object.assign(state,s)}catch(e){}
-state.qs=state.qs||{};state.cur=state.cur||null;state.pdiv=state.pdiv||null;
-const GKEY='transcriptor-guia-v1';
-let guide=[];try{const g=JSON.parse(localStorage.getItem(GKEY)||'[]');if(Array.isArray(g))guide=g}catch(e){}
-const saveGuide=()=>{try{localStorage.setItem(GKEY,JSON.stringify(guide))}catch(e){}};
-let promptOpen=true;try{promptOpen=localStorage.getItem('transcriptor-guia-abierta')!=='0'}catch(e){}
+const LKEY='te-entrevistas-v2',PKEY='te-preferencias-v1',GKEY='transcriptor-guia-v1',OLDKEY='transcriptor-entrevista-movil-v1';
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const read=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k)||'null');return v==null?d:v}catch(e){return d}};
+let quotaWarned=false;
+const write=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){if(!quotaWarned){quotaWarned=true;toast('No hay espacio para guardar en el celular')}}};
 
-let speaker='A',recording=false,rec=null,startedAt=0,tick=null,forceNew=true;
-let interim='',sessSpeaker='A',uttStart=null,lastFinal='',restarts=[];
-let media=null,chunks=[],audioBlob=null,stream=null,wakeLock=null;
+/* ---------- datos ---------- */
+let prefs=Object.assign({interviewer:'Entrevistador',lang:'es-AR',mode:'both'},read(PKEY,{}));
+let lib=read(LKEY,null);if(!lib||!Array.isArray(lib.list))lib={list:[],active:null};
+let guide=read(GKEY,[]);if(!Array.isArray(guide))guide=[];
+let promptOpen=read('te-guia-abierta',true)!==false;
 
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}};
+function nextSubject(){let m=0;lib.list.forEach(v=>{const r=/^Sujeto (\d+)$/i.exec(v.subject||'');if(r)m=Math.max(m,+r[1])});return 'Sujeto '+(m?m+1:lib.list.length+1)}
+function newIv(subject){return{id:uid(),subject:subject||nextSubject(),date:new Date().toISOString(),elapsed:0,segs:[],qs:{},cur:null,pdiv:null,saved:false,audio:[]}}
+
+// migrar la versión anterior (una sola entrevista)
+if(!lib.list.length){
+  const old=read(OLDKEY,null);
+  if(old&&Array.isArray(old.segs)&&old.segs.length){
+    const v=newIv('Sujeto 1');
+    Object.assign(v,{date:old.date||v.date,elapsed:old.elapsed||0,segs:old.segs,qs:old.qs||{},cur:old.cur||null,pdiv:old.pdiv||null});
+    if(old.names){if(old.names.A&&old.names.A!=='Entrevistador')prefs.interviewer=old.names.A;if(old.names.B&&!['Deportista','Entrevistado'].includes(old.names.B))v.subject=old.names.B}
+    if(old.lang)prefs.lang=old.lang;
+    lib.list.push(v);lib.active=v.id;
+  }
+}
+let iv=lib.list.find(v=>v.id===lib.active);
+if(!iv){iv=newIv();lib.list.push(iv);lib.active=iv.id}
+lib.list.forEach(v=>{v.audio=v.audio||[];v.qs=v.qs||{}});
+const save=()=>write(LKEY,lib),savePrefs=()=>write(PKEY,prefs),saveGuide=()=>write(GKEY,guide);
+save();savePrefs();
+
+const nm=(w,v=iv)=>w==='A'?prefs.interviewer:v.subject;
+
+/* ---------- utilidades ---------- */
 const fmt=ms=>{const s=Math.floor(ms/1000);return[s/3600|0,(s/60|0)%60,s%60].map(n=>String(n).padStart(2,'0')).join(':')};
-const now=()=>state.elapsed+(recording?Date.now()-startedAt:0);
-function toast(t){const el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),1800)}
+const fdate=d=>new Date(d).toLocaleString('es-AR',{dateStyle:'medium',timeStyle:'short'});
+const fsize=b=>!b?'—':b<1e6?Math.max(1,Math.round(b/1e3))+' KB':(b/1e6).toFixed(1).replace('.',',')+' MB';
+const words=v=>v.segs.reduce((n,s)=>n+(s.kind!=='q'&&s.text.trim()?s.text.trim().split(/\s+/).length:0),0);
+const abytes=v=>(v.audio||[]).reduce((n,c)=>n+(c.bytes||0),0);
+const slug=s=>(s||'entrevista').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\w]+/g,'-').replace(/^-|-$/g,'').toLowerCase()||'entrevista';
+const stamp=v=>{const d=new Date(v.date),p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`};
+const extOf=t=>/mp4|m4a|aac/.test(t)?'m4a':/ogg/.test(t)?'ogg':/mpeg|mp3/.test(t)?'mp3':/wav/.test(t)?'wav':'webm';
+function toast(t){const el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),2200)}
 function warn(t){const w=$('warn');if(!t){w.hidden=true;return}w.textContent=t;w.hidden=false}
 
-/* ---------- render ---------- */
+/* ---------- audio en el celular (IndexedDB) ---------- */
+let dbp=null;
+function idb(){
+  if(!dbp)dbp=new Promise((res,rej)=>{
+    const r=indexedDB.open('te-audio',1);
+    r.onupgradeneeded=()=>{const s=r.result.createObjectStore('chunks',{autoIncrement:true});s.createIndex('iid','iid')};
+    r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);
+  });
+  return dbp;
+}
+async function putChunk(row){const db=await idb();return new Promise((res,rej)=>{const tx=db.transaction('chunks','readwrite');tx.objectStore('chunks').add(row);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)})}
+async function getChunks(iid){const db=await idb();return new Promise((res,rej)=>{const q=db.transaction('chunks').objectStore('chunks').index('iid').getAll(iid);q.onsuccess=()=>res(q.result||[]);q.onerror=()=>rej(q.error)})}
+async function delChunks(iid){const db=await idb();return new Promise((res,rej)=>{const tx=db.transaction('chunks','readwrite');const q=tx.objectStore('chunks').index('iid').openCursor(IDBKeyRange.only(iid));q.onsuccess=()=>{const c=q.result;if(c){c.delete();c.continue()}};tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
+async function audioFiles(v){
+  const rows=await getChunks(v.id),by=new Map();
+  rows.forEach(r=>{if(!by.has(r.clip))by.set(r.clip,[]);by.get(r.clip).push(r)});
+  const clips=v.audio.filter(c=>by.has(c.clip)),out=[];
+  clips.forEach((c,i)=>{
+    const parts=by.get(c.clip).sort((a,b)=>a.seq-b.seq).map(r=>r.blob);
+    const type=(c.mime||parts[0].type||'audio/webm').split(';')[0];
+    const part=clips.length>1?`-parte${i+1}`:'';
+    out.push(new File(parts,`${slug(v.subject)}-${stamp(v)}${part}.${extOf(type)}`,{type}));
+  });
+  return out;
+}
+
+/* ---------- estado de grabación ---------- */
+let speaker='A',recording=false,rec=null,startedAt=0,tick=null,forceNew=true;
+let interim='',sessSpeaker='A',uttStart=null,lastFinal='',restarts=[];
+let media=null,stream=null,actx=null,raf=0,lastLoud=0,lastText=0,silenceWarned=false,wakeLock=null;
+const pending=new Set();
+const now=()=>iv.elapsed+(recording?Date.now()-startedAt:0);
+
+/* ---------- transcripción en pantalla ---------- */
 function nearBottom(){const m=$('main');return m.scrollHeight-m.scrollTop-m.clientHeight<120}
 function render(){
   const stick=nearBottom(),L=$('list');L.textContent='';
-  if(!state.segs.length&&!interim){
+  if(!iv.segs.length&&!interim){
     const e=document.createElement('div');e.className='empty';
-    e.innerHTML='Tocá el <b>botón rojo</b> para empezar.<br>Mientras hablan, tocá <b>quién habla</b> abajo:<br>cada cambio corta el párrafo y lo asigna.<br><br>Dejá el celular entre los dos, con la pantalla encendida.';
+    e.innerHTML=prefs.mode==='audio'
+      ?'Modo <b>solo audio</b>: tocá el botón rojo para grabar.<br>Al marcar ✓ en cada pregunta queda anotado<br>el minuto, para ubicarla después en el audio.'
+      :'Tocá el <b>botón rojo</b> para empezar.<br>Mientras hablan, tocá <b>quién habla</b> abajo:<br>cada cambio corta el párrafo y lo asigna.<br><br>Dejá el celular entre los dos, con la pantalla encendida.';
     L.appendChild(e);
   }
-  state.segs.forEach((s,i)=>{
+  iv.segs.forEach((s,i)=>{
     if(s.kind==='q'){
       const d=document.createElement('div');d.className='qdiv';
       const n=document.createElement('span');n.className='n';n.textContent='P'+s.num;
       const q=document.createElement('span');q.className='q';q.textContent=s.text;
       const t=document.createElement('span');t.className='t';t.textContent=fmt(s.t);
       const x=document.createElement('button');x.textContent='×';x.ariaLabel='Quitar separador de pregunta';
-      x.onclick=()=>{state.segs.splice(i,1);save();render()};
+      x.onclick=()=>{iv.segs.splice(i,1);save();render()};
       d.append(n,q,t,x);L.appendChild(d);return;
     }
     const d=document.createElement('div');d.className='seg '+s.who+(s.star?' star':'');
     const head=document.createElement('div');head.className='head';
-    const who=document.createElement('button');who.className='who';who.textContent=state.names[s.who];who.title='Cambiar hablante';
+    const who=document.createElement('button');who.className='who';who.textContent=nm(s.who);who.title='Cambiar hablante';
     who.onclick=()=>{s.who=s.who==='A'?'B':'A';save();render()};
     const t=document.createElement('span');t.className='t';t.textContent=fmt(s.t);
     head.append(who,t);
@@ -276,139 +393,219 @@ function render(){
     const st=document.createElement('button');st.className='st';st.textContent='★';st.setAttribute('aria-pressed',!!s.star);st.ariaLabel='Marcar como importante';
     st.onclick=()=>{s.star=!s.star;save();render()};
     const del=document.createElement('button');del.textContent='×';del.ariaLabel='Eliminar párrafo';
-    del.onclick=()=>{state.segs.splice(i,1);save();render()};
+    del.onclick=()=>{iv.segs.splice(i,1);save();render()};
     acts.append(st,del);
     d.append(head,acts,tx);L.appendChild(d);
   });
   if(interim){
     const g=document.createElement('div');g.className='seg ghost '+sessSpeaker;
-    const h=document.createElement('div');h.className='head';const w=document.createElement('span');w.className='who';w.textContent=state.names[sessSpeaker];h.appendChild(w);
+    const h=document.createElement('div');h.className='head';const w=document.createElement('span');w.className='who';w.textContent=nm(sessSpeaker);h.appendChild(w);
     const tx=document.createElement('div');tx.className='txt';tx.textContent=interim;
     g.append(h,tx);L.appendChild(g);
   }
   if(stick&&recording)$('main').scrollTop=$('main').scrollHeight;
 }
-function meta(){
-  $('mDate').textContent=new Date(state.date).toLocaleString('es-AR',{dateStyle:'medium',timeStyle:'short'});
-  const talk=state.segs.filter(s=>s.kind!=='q');
-  $('mDur').textContent=fmt(now());$('mSeg').textContent=talk.length;
-  $('mWords').textContent=talk.reduce((n,s)=>n+(s.text.trim()?s.text.trim().split(/\s+/).length:0),0);
+function labels(){
+  $('lblA').textContent=prefs.interviewer;$('lblB').textContent=iv.subject;$('title').textContent=iv.subject;
+  $('clock').textContent=fmt(now());
 }
-function labels(){$('lblA').textContent=state.names.A;$('lblB').textContent=state.names.B}
+function meta(){
+  $('mDate').textContent=fdate(iv.date);$('mDur').textContent=fmt(now());$('mWords').textContent=words(iv);
+  $('mAudio').textContent=fsize(abytes(iv));$('dlAudio').disabled=!abytes(iv);
+}
 
 /* ---------- texto ---------- */
 function addFinal(txt,who){
   txt=txt.trim();if(!txt)return;
   if(txt===lastFinal)return; // algunos Android repiten el mismo resultado final
-  lastFinal=txt;
+  lastFinal=txt;lastText=Date.now();
   txt=txt.charAt(0).toUpperCase()+txt.slice(1);
-  const last=state.segs[state.segs.length-1];
-  if(forceNew||!last||last.who!==who){
-    // el separador de la pregunta va justo antes de la primera respuesta del entrevistado
-    if(state.pdiv&&who==='B'){state.pdiv.t=uttStart??now();state.segs.push(state.pdiv);state.pdiv=null}
-    state.segs.push({who,t:uttStart??now(),text:txt});forceNew=false;
-  }
-  else last.text+=(/[.?!…]$/.test(last.text)?' ':'. ')+txt;
+  const last=iv.segs[iv.segs.length-1];
+  if(forceNew||!last||last.kind==='q'||last.who!==who){
+    if(iv.pdiv&&who==='B'){iv.pdiv.t=uttStart??now();iv.segs.push(iv.pdiv);iv.pdiv=null}
+    iv.segs.push({who,t:uttStart??now(),text:txt});forceNew=false;
+  } else last.text+=(/[.?!…]$/.test(last.text)?' ':'. ')+txt;
   save();
 }
 
-/* ---------- reconocimiento ---------- */
+/* ---------- reconocimiento de voz ---------- */
 function makeRec(){
   const r=new SR();
-  r.lang=state.lang;
-  r.continuous=!isMobile;       // en celulares el modo continuo duplica texto: una frase por sesión y reinicio
-  r.interimResults=true;r.maxAlternatives=1;
+  r.lang=prefs.lang;r.continuous=!isMobile;r.interimResults=true;r.maxAlternatives=1;
   r.onstart=()=>{sessSpeaker=speaker;lastFinal=''};
   r.onresult=e=>{
     let fin='',tmp='';
     for(let i=e.resultIndex;i<e.results.length;i++){const x=e.results[i];if(x.isFinal)fin+=x[0].transcript;else tmp+=x[0].transcript}
     if(uttStart===null&&(fin||tmp))uttStart=now();
+    if(fin||tmp)lastText=Date.now();
     if(fin){addFinal(fin,sessSpeaker);uttStart=null;interim=''}else interim=tmp;
     render();
   };
   r.onerror=e=>{
-    if(e.error==='not-allowed'||e.error==='service-not-allowed'){warn('No hay permiso de micrófono. Tocá el candado de la barra de direcciones → Permisos → Micrófono → Permitir.');stop()}
-    else if(e.error==='audio-capture'){warn('El micrófono está ocupado. Si activaste “Grabar audio en paralelo”, desactivalo en ⋯.')}
-    else if(e.error==='network'){warn('Sin conexión: el reconocimiento de voz del celular necesita internet.')}
+    if(e.error==='not-allowed'||e.error==='service-not-allowed'){warn('No hay permiso de micrófono para transcribir. Tocá el candado de la barra de direcciones → Permisos → Micrófono → Permitir.');if(prefs.mode==='text')stop()}
+    else if(e.error==='audio-capture'){warn(media?'Tu celular no deja transcribir mientras graba audio. El audio se sigue grabando; en ⋯ → “Qué grabar” elegí “Solo grabar audio” o “Solo transcribir”.':'El micrófono está ocupado por otra app.')}
+    else if(e.error==='network'){warn('Sin conexión: la transcripción en vivo necesita internet.'+(media?' El audio se sigue grabando.':''))}
   };
   r.onend=()=>{
-    if(interim){addFinal(interim,sessSpeaker);interim='';uttStart=null;render()} // no perder lo que quedó a medias
-    if(!recording)return;
+    if(interim){addFinal(interim,sessSpeaker);interim='';uttStart=null;render()}
+    if(!recording||prefs.mode==='audio')return;
     const t=Date.now();restarts=restarts.filter(x=>t-x<3000);restarts.push(t);
-    if(restarts.length>8){warn('El reconocimiento se corta seguido. Revisá la conexión o el permiso de micrófono.')}
-    setTimeout(()=>{if(recording){try{r.start()}catch(_){}}},restarts.length>8?1500:60);
+    setTimeout(()=>{if(recording&&prefs.mode!=='audio'){try{r.start()}catch(_){}}},restarts.length>8?1500:60);
   };
   return r;
 }
 
+/* ---------- grabación de audio ---------- */
+function pickMime(){
+  if(!window.MediaRecorder||!MediaRecorder.isTypeSupported)return'';
+  return['audio/mp4;codecs=mp4a.40.2','audio/mp4','audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus'].find(m=>MediaRecorder.isTypeSupported(m))||'';
+}
+async function audioStart(){
+  if(media&&media.state==='paused'){media.resume();meterOn();return true}
+  if(media&&media.state==='recording')return true;
+  if(!window.MediaRecorder||!navigator.mediaDevices){warn('Este navegador no puede grabar audio.');return false}
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}})}
+  catch(e){warn('No hay permiso de micrófono para grabar audio. Tocá el candado de la barra de direcciones → Permisos → Micrófono → Permitir.');return false}
+  const mime=pickMime();
+  try{media=mime?new MediaRecorder(stream,{mimeType:mime,audioBitsPerSecond:64000}):new MediaRecorder(stream)}catch(e){media=new MediaRecorder(stream)}
+  const meta={clip:Date.now(),mime:media.mimeType||mime||'audio/webm',bytes:0},owner=iv;let seq=0;
+  owner.audio.push(meta);save();
+  media.ondataavailable=e=>{
+    if(!e.data||!e.data.size)return;
+    meta.bytes+=e.data.size;save();
+    const p=putChunk({iid:owner.id,clip:meta.clip,seq:seq++,blob:e.data}).catch(()=>warn('No se pudo guardar el audio en el celular (¿memoria llena?).'));
+    pending.add(p);p.finally(()=>pending.delete(p));
+  };
+  media.start(5000);
+  meterOn();
+  return true;
+}
+function audioPause(){if(media&&media.state==='recording'){try{media.requestData()}catch(e){}media.pause()}meterOff()}
+function audioFinish(){
+  return new Promise(res=>{
+    const done=async()=>{await Promise.all([...pending]);if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;media=null;meterOff();if(actx){try{actx.close()}catch(e){}actx=null}res()};
+    if(!media||media.state==='inactive')return done();
+    media.onstop=()=>setTimeout(done,50);
+    try{media.stop()}catch(e){done()}
+  });
+}
+function meterOn(){
+  $('meter').hidden=false;
+  try{
+    if(!actx){
+      actx=new (window.AudioContext||window.webkitAudioContext)();
+      const an=actx.createAnalyser();an.fftSize=512;actx.createMediaStreamSource(stream).connect(an);
+      meterOn.an=an;meterOn.buf=new Uint8Array(an.fftSize);
+    }
+    if(actx.state==='suspended')actx.resume();
+    cancelAnimationFrame(raf);
+    const loop=()=>{
+      const an=meterOn.an,buf=meterOn.buf;an.getByteTimeDomainData(buf);
+      let m=0;for(let i=0;i<buf.length;i++){const d=Math.abs(buf[i]-128);if(d>m)m=d}
+      const lv=m/128;$('meter').style.setProperty('--lv',Math.min(1,lv*3).toFixed(2));
+      if(lv>0.015)lastLoud=Date.now();
+      // la transcripción recibe voz pero el audio llega mudo: el celular no comparte el micrófono
+      if(!silenceWarned&&prefs.mode==='both'&&Date.now()-startedAt>12000&&Date.now()-lastText<5000&&Date.now()-lastLoud>12000){
+        silenceWarned=true;warn('El audio se está grabando en silencio: tu celular no deja usar el micrófono para las dos cosas. En ⋯ → “Qué grabar” elegí “Solo grabar audio” o “Solo transcribir”.');
+      }
+      raf=requestAnimationFrame(loop);
+    };loop();
+  }catch(e){}
+}
+function meterOff(){cancelAnimationFrame(raf);$('meter').hidden=true}
+
+/* ---------- grabar / pausar ---------- */
 async function lockScreen(){try{if('wakeLock' in navigator)wakeLock=await navigator.wakeLock.request('screen')}catch(e){}}
+let persisted=false;
 async function start(){
-  if(!SR){warn('Este navegador no tiene reconocimiento de voz. En Android usá Chrome; en iPhone, Safari (con Siri/Dictado activado).');return}
-  warn('');recording=true;startedAt=Date.now();forceNew=true;
+  if(recording)return;
+  if(prefs.mode!=='audio'&&!SR){warn('Este navegador no tiene reconocimiento de voz. En Android usá Chrome; en iPhone, Safari. También podés elegir “Solo grabar audio” en ⋯.');return}
+  warn('');recording=true;startedAt=Date.now();forceNew=true;silenceWarned=false;lastText=0;lastLoud=Date.now();iv.saved=false;
   $('rec').classList.add('on');$('rec').ariaLabel='Pausar';$('dot').classList.add('live');
   tick=setInterval(()=>{$('clock').textContent=fmt(now())},500);
   lockScreen();render();
-  if($('saveAudio').checked&&window.MediaRecorder){
-    try{
-      stream=await navigator.mediaDevices.getUserMedia({audio:true});
-      media=new MediaRecorder(stream);
-      media.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
-      media.onstop=()=>{audioBlob=new Blob(chunks,{type:media.mimeType||'audio/webm'});$('dlAudio').disabled=false;stream.getTracks().forEach(t=>t.stop());stream=null};
-      media.start(1000);
-    }catch(e){toast('No se pudo grabar el audio')}
+  if(!persisted&&navigator.storage&&navigator.storage.persist){persisted=true;navigator.storage.persist().catch(()=>{})}
+  if(prefs.mode!=='text'){
+    const ok=await audioStart();
+    if(!ok&&prefs.mode==='audio'){stop();return}
   }
-  rec=rec||makeRec();
-  try{rec.start()}catch(e){}
+  if(prefs.mode!=='audio'&&recording){rec=rec||makeRec();try{rec.start()}catch(e){}}
   if(navigator.vibrate)navigator.vibrate(30);
+  save();
 }
 function stop(){
   if(!recording)return;
-  recording=false;state.elapsed+=Date.now()-startedAt;clearInterval(tick);
+  recording=false;iv.elapsed+=Date.now()-startedAt;clearInterval(tick);
   try{rec&&rec.stop()}catch(e){}
-  if(media&&media.state!=='inactive')media.stop();
+  audioPause();
   try{wakeLock&&wakeLock.release()}catch(e){}wakeLock=null;
   $('rec').classList.remove('on');$('rec').ariaLabel='Grabar';$('dot').classList.remove('live');
-  $('clock').textContent=fmt(state.elapsed);save();
+  $('clock').textContent=fmt(iv.elapsed);save();
   setTimeout(render,300);
 }
-
 function setSpeaker(w){
   if(w===speaker)return;
   speaker=w;forceNew=true;
   $('spkA').setAttribute('aria-pressed',w==='A');$('spkB').setAttribute('aria-pressed',w==='B');
   if(navigator.vibrate)navigator.vibrate(15);
-  // cerrar la frase en curso: queda para quien hablaba; lo que sigue va al nuevo hablante
-  if(recording&&rec){try{rec.stop()}catch(e){}}
+  if(recording&&rec&&prefs.mode!=='audio'){try{rec.stop()}catch(e){}} // cierra la frase en curso para quien hablaba
 }
 
 /* ---------- exportar ---------- */
-function build(md){
-  meta();
-  const segs=state.segs.filter(s=>s.kind==='q'||s.text.trim());
+function build(v,md){
+  const segs=v.segs.filter(s=>s.kind==='q'||s.text.trim());
+  const dur=fmt(v===iv?now():v.elapsed);
   const head=md
-    ?`# Entrevista\n\n**Fecha:** ${$('mDate').textContent}  \n**Duración:** ${fmt(now())}  \n**Participantes:** ${state.names.A} (entrevistador), ${state.names.B} (entrevistado)\n\n---\n\n`
-    :`ENTREVISTA\nFecha: ${$('mDate').textContent}\nDuración: ${fmt(now())}\nParticipantes: ${state.names.A} (entrevistador), ${state.names.B} (entrevistado)\n★ = momento marcado como importante\n\n`;
+    ?`# Entrevista: ${v.subject}\n\n**Fecha:** ${fdate(v.date)}  \n**Duración:** ${dur}  \n**Participantes:** ${nm('A',v)} (entrevistador), ${v.subject} (entrevistado)\n\n---\n\n`
+    :`ENTREVISTA: ${v.subject}\nFecha: ${fdate(v.date)}\nDuración: ${dur}\nParticipantes: ${nm('A',v)} (entrevistador), ${v.subject} (entrevistado)\n★ = momento marcado como importante\n\n`;
   let out=head+segs.map(s=>{
-    if(s.kind==='q')return md?`### P${s.num}. ${s.text}`:`———— P${s.num}. ${s.text} ————`;
-    const st=s.star?'★ ':'';return md?`${st}**[${fmt(s.t)}] ${state.names[s.who]}:** ${s.text.trim()}`:`${st}[${fmt(s.t)}] ${state.names[s.who]}: ${s.text.trim()}`}).join('\n\n')+'\n';
-  const pend=guide.filter(q=>qStatus(q.id)!=='done');
-  if(guide.length&&pend.length)out+=(md?'\n---\n\n**Preguntas no realizadas:**\n\n':'\n\nPREGUNTAS NO REALIZADAS\n')+pend.map(q=>`- ${q.text}${qStatus(q.id)==='skip'?' (saltada)':''}`).join('\n')+'\n';
+    if(s.kind==='q')return md?`### P${s.num}. ${s.text} _(${fmt(s.t)})_`:`———— P${s.num}. ${s.text} [${fmt(s.t)}] ————`;
+    const st=s.star?'★ ':'';
+    return md?`${st}**[${fmt(s.t)}] ${nm(s.who,v)}:** ${s.text.trim()}`:`${st}[${fmt(s.t)}] ${nm(s.who,v)}: ${s.text.trim()}`;
+  }).join('\n\n')+'\n';
+  const pend=guide.filter(q=>qStatus(q.id,v)!=='done');
+  if(guide.length&&pend.length)out+=(md?'\n---\n\n**Preguntas no realizadas:**\n\n':'\n\nPREGUNTAS NO REALIZADAS\n')+pend.map(q=>`- ${q.text}${qStatus(q.id,v)==='skip'?' (saltada)':''}`).join('\n')+'\n';
   return out;
 }
+const txtFile=(v,md)=>new File([build(v,md)],`${slug(v.subject)}-${stamp(v)}.${md?'md':'txt'}`,{type:md?'text/markdown':'text/plain'});
+function download(blob,name){
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.rel='noopener';
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},60000);
+}
+async function flushIfActive(v){if(v===iv&&media){audioPause();await new Promise(r=>setTimeout(r,250));await Promise.all([...pending])}}
+async function dlAudio(v){
+  await flushIfActive(v);
+  const files=await audioFiles(v).catch(()=>[]);
+  if(!files.length){toast('Esta entrevista no tiene audio grabado');return}
+  files.forEach((f,i)=>setTimeout(()=>download(f,f.name),i*900));
+  toast(files.length>1?`Descargando ${files.length} partes de audio`:'Descargando audio');
+}
+function dlText(v){const f=txtFile(v,false);download(f,f.name);toast('Descargando texto')}
+async function shareAll(v){
+  await flushIfActive(v);
+  const files=[txtFile(v,false),...await audioFiles(v).catch(()=>[])];
+  try{
+    if(navigator.canShare&&navigator.canShare({files})){await navigator.share({files,title:'Entrevista '+v.subject});return}
+    if(navigator.canShare&&navigator.canShare({files:[files[0]]})){await navigator.share({files:[files[0]],title:'Entrevista '+v.subject});toast('Se compartió el texto; el audio bajalo con “Descargar audio”');return}
+  }catch(e){if(e.name==='AbortError')return}
+  files.forEach((f,i)=>setTimeout(()=>download(f,f.name),i*900));
+}
+async function copyText(v){try{await navigator.clipboard.writeText(build(v,false));toast('Transcripción copiada')}catch(e){toast('No se pudo copiar; usá Descargar texto')}}
 
 /* ---------- guía de preguntas ---------- */
-const qStatus=id=>(state.qs[id]&&state.qs[id].st)||'pending';
+const qStatus=(id,v=iv)=>(v.qs[id]&&v.qs[id].st)||'pending';
 function nextPending(from){
   for(let k=from+1;k<guide.length;k++)if(qStatus(guide[k].id)==='pending')return k;
   for(let k=0;k<=from&&k<guide.length;k++)if(qStatus(guide[k].id)==='pending')return k;
   return -1;
 }
 function curIndex(){
-  let i=guide.findIndex(q=>q.id===state.cur);
-  if(i<0){i=nextPending(-1);state.cur=i>=0?guide[i].id:null}
+  let i=guide.findIndex(q=>q.id===iv.cur);
+  if(i<0){i=nextPending(-1);iv.cur=i>=0?guide[i].id:null}
   return i;
 }
-function advance(i){const k=nextPending(i);state.cur=k>=0?guide[k].id:null;save();renderPrompt()}
+function goTo(j){if(j<0||j>=guide.length)return;iv.cur=guide[j].id;save();renderPrompt()}
+function advance(i){const k=nextPending(i);iv.cur=k>=0?guide[k].id:null;save();renderPrompt()}
 function renderPrompt(){
   const n=guide.length,show=(id,v)=>{$(id).hidden=!v};
   $('prompt').classList.toggle('collapsed',!promptOpen);$('pToggle').textContent=promptOpen?'▾':'▴';
@@ -418,19 +615,20 @@ function renderPrompt(){
   if(!n){
     $('pNum').textContent='Guía de preguntas';
     $('pText').textContent='Cargá las preguntas que querés hacer y te las voy mostrando durante la entrevista.';
-    ['pPrev','pSkip','pDone','pRetry'].forEach(x=>show(x,false));show('pEdit',true);return;
+    ['pPrev','pFwd','pSkip','pDone','pRetry'].forEach(x=>show(x,false));show('pEdit',true);return;
   }
   const i=curIndex();
   if(i<0){
     $('pNum').textContent='Guía completa';
     $('pText').textContent=`${done} hechas · ${skip} saltadas`;
-    show('pPrev',true);show('pSkip',false);show('pDone',false);show('pRetry',skip>0);show('pEdit',false);return;
+    show('pPrev',true);$('pPrev').disabled=false;show('pFwd',false);show('pSkip',false);show('pDone',false);show('pRetry',skip>0);show('pEdit',false);return;
   }
   const q=guide[i],st=qStatus(q.id);
   $('pNum').textContent=`Pregunta ${i+1} de ${n} · ${done} hechas`;
   if(st!=='pending'){$('pChip').className='chip '+st;$('pChip').textContent=st==='done'?'Hecha':'Saltada'}
   $('pText').textContent=q.text;
-  show('pPrev',true);$('pPrev').disabled=i===0;show('pSkip',true);show('pDone',true);show('pRetry',false);show('pEdit',false);
+  show('pPrev',true);show('pFwd',true);$('pPrev').disabled=i===0;$('pFwd').disabled=i===n-1;
+  show('pSkip',true);show('pDone',true);show('pRetry',false);show('pEdit',false);
   const k=nextPending(i);
   $('pNext').textContent=k>=0&&k!==i?'Sigue: '+guide[k].text:(k===i?'':'Es la última pendiente');
 }
@@ -448,102 +646,177 @@ function renderGuide(){
     const mk=(label,aria,fn,dis)=>{const b=document.createElement('button');b.textContent=label;b.ariaLabel=aria;b.disabled=!!dis;b.onclick=fn;a.appendChild(b)};
     const move=d=>{[guide[i],guide[i+d]]=[guide[i+d],guide[i]];saveGuide();renderGuide();renderPrompt()};
     mk('↑','Subir',()=>move(-1),i===0);
-    mk('→','Mostrar ahora',()=>{state.cur=q.id;save();renderPrompt();$('guideDlg').close();toast('Pregunta '+(i+1))});
+    mk('→','Mostrar ahora',()=>{goTo(i);$('guideDlg').close();toast('Pregunta '+(i+1))});
     mk('↓','Bajar',()=>move(1),i===guide.length-1);
-    mk('×','Eliminar',()=>{guide.splice(i,1);delete state.qs[q.id];if(state.cur===q.id)state.cur=null;saveGuide();save();renderGuide();renderPrompt()});
+    mk('×','Eliminar',()=>{guide.splice(i,1);lib.list.forEach(v=>{delete v.qs[q.id];if(v.cur===q.id)v.cur=null});saveGuide();save();renderGuide();renderPrompt()});
     li.append(n,t,a);L.appendChild(li);
   });
 }
 function openGuide(){renderGuide();$('guideDlg').showModal()}
-const stamp=()=>new Date(state.date).toISOString().slice(0,16).replace(/[:T]/g,'-');
-function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}
-async function shareText(){
-  const text=build(false),name=`entrevista-${stamp()}.txt`;
-  try{
-    const f=new File([text],name,{type:'text/plain'});
-    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Entrevista'});return}
-    if(navigator.share){await navigator.share({title:'Entrevista',text});return}
-  }catch(e){if(e.name==='AbortError')return}
-  download(new Blob([text],{type:'text/plain;charset=utf-8'}),name);
+
+/* ---------- entrevistas guardadas ---------- */
+function loadIv(v){
+  iv=v;lib.active=v.id;save();
+  speaker='A';forceNew=true;interim='';
+  $('spkA').setAttribute('aria-pressed','true');$('spkB').setAttribute('aria-pressed','false');
+  warn('');labels();render();renderPrompt();
 }
-async function copyText(){
-  try{await navigator.clipboard.writeText(build(false));toast('Transcripción copiada')}
-  catch(e){toast('No se pudo copiar; usá Compartir')}
+async function leaveCurrent(){stop();await audioFinish();if(iv.pdiv){iv.segs.push(iv.pdiv);iv.pdiv=null}save()}
+async function finishInterview(){
+  $('menu').close();
+  toast('Guardando…');
+  await leaveCurrent();
+  iv.saved=true;save();
+  $('svTitle').textContent=iv.subject+' guardada';
+  $('svStats').innerHTML='';
+  [['Duración',fmt(iv.elapsed)],['Palabras',words(iv)],['Audio',fsize(abytes(iv))]].forEach(([k,val])=>{const s=document.createElement('span');s.append(k+': ');const b=document.createElement('b');b.textContent=val;s.appendChild(b);$('svStats').appendChild(s)});
+  $('svAudio').disabled=!abytes(iv);
+  $('svNext').value=nextSubject();
+  $('saved').showModal();
+}
+async function startNew(name){
+  if(recording||media)await leaveCurrent();
+  const v=newIv((name||'').trim()||nextSubject());
+  // si la entrevista actual quedó vacía, se reemplaza
+  if(!iv.segs.length&&!abytes(iv)){lib.list=lib.list.filter(x=>x!==iv)}
+  lib.list.push(v);loadIv(v);toast('Lista para entrevistar a '+v.subject);
+}
+function renderLib(){
+  const L=$('iList');L.textContent='';
+  const items=[...lib.list].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(!items.length){const e=document.createElement('li');e.className='none';e.textContent='Todavía no hay entrevistas.';L.appendChild(e)}
+  items.forEach(v=>{
+    const li=document.createElement('li');if(v===iv)li.className='cur';
+    const t=document.createElement('div');t.className='it';
+    const name=document.createElement('span');name.textContent=v.subject;
+    const tag=document.createElement('em');tag.className='tag'+(v.saved?'':' open');tag.style.fontStyle='normal';
+    tag.textContent=v===iv?(v.saved?'Abierta · guardada':'En curso'):(v.saved?'Guardada':'Sin terminar');
+    t.append(name,tag);
+    const m=document.createElement('div');m.className='im';
+    m.textContent=`${fdate(v.date)} · ${fmt(v===iv?now():v.elapsed)} · ${words(v)} palabras · audio ${fsize(abytes(v))}`;
+    const b=document.createElement('div');b.className='ib';
+    const mk=(label,fn,cls,dis)=>{const x=document.createElement('button');x.textContent=label;if(cls)x.className=cls;x.disabled=!!dis;x.onclick=fn;b.appendChild(x);return x};
+    if(v!==iv)mk('Abrir',async()=>{await leaveCurrent();loadIv(v);$('lib').close();toast('Abriste '+v.subject)});
+    mk('Texto',()=>dlText(v));
+    mk('Audio',()=>dlAudio(v),'',!abytes(v));
+    mk('Compartir',()=>shareAll(v));
+    const del=mk('Eliminar',async()=>{
+      if(!del.dataset.arm){del.dataset.arm='1';del.textContent='¿Seguro? Tocá de nuevo';setTimeout(()=>{if(del.isConnected){delete del.dataset.arm;del.textContent='Eliminar'}},3500);return}
+      if(v===iv){stop();await audioFinish()}
+      await delChunks(v.id).catch(()=>{});
+      lib.list=lib.list.filter(x=>x!==v);
+      if(v===iv){const nv=newIv();lib.list.push(nv);loadIv(nv)}
+      save();renderLib();toast('Entrevista eliminada');
+    },'del');
+    li.append(t,m,b);L.appendChild(li);
+  });
+  $('libSpace').textContent='';
+  if(navigator.storage&&navigator.storage.estimate)navigator.storage.estimate().then(e=>{$('libSpace').textContent=`Espacio usado en este celular: ${fsize(e.usage)}. Las entrevistas quedan guardadas en este navegador: si borrás los datos de Chrome se pierden, así que bajá copias.`}).catch(()=>{});
 }
 
 /* ---------- eventos ---------- */
 $('rec').onclick=()=>recording?stop():start();
 $('spkA').onclick=()=>setSpeaker('A');
 $('spkB').onclick=()=>setSpeaker('B');
-$('newSeg').onclick=()=>{forceNew=true;if(recording&&rec){try{rec.stop()}catch(e){}}toast('Párrafo nuevo')};
+$('newSeg').onclick=()=>{forceNew=true;if(recording&&rec&&prefs.mode!=='audio'){try{rec.stop()}catch(e){}}toast('Párrafo nuevo')};
+$('markLast').onclick=()=>{
+  const s=[...iv.segs].reverse().find(x=>x.kind!=='q');
+  if(!s){toast('Todavía no hay texto');return}
+  s.star=true;save();render();toast('Marcado ★');
+};
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());
+document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d)d.close()}));
+$('menuBtn').onclick=$('title').onclick=()=>{meta();$('subject').value=iv.subject;$('menu').showModal()};
+$('libBtn').onclick=()=>{renderLib();$('lib').showModal()};
+$('subject').oninput=e=>{iv.subject=e.target.value.trim()||nextSubject();save();labels();render()};
+$('interviewer').value=prefs.interviewer;$('lang').value=prefs.lang;$('mode').value=prefs.mode;
+$('interviewer').oninput=e=>{prefs.interviewer=e.target.value.trim()||'Entrevistador';savePrefs();labels();render()};
+$('lang').onchange=e=>{
+  prefs.lang=e.target.value;savePrefs();
+  if(rec){rec.onend=null;try{rec.abort()}catch(_){}}rec=null;
+  if(recording&&prefs.mode!=='audio'){rec=makeRec();try{rec.start()}catch(_){}}
+};
+function modeNote(){
+  $('modeNote').textContent={both:'Intenta las dos cosas. En algunos celulares el micrófono no se comparte: si pasa, te aviso.',
+    text:'Solo texto en vivo, sin archivo de audio.',
+    audio:'Graba el audio completo sin cortes. Las preguntas que marcás con ✓ quedan con su minuto. Después pasás el audio a Gemini para transcribirlo.'}[prefs.mode];
+}
+$('mode').onchange=e=>{
+  const was=recording;if(was)stop();
+  prefs.mode=e.target.value;savePrefs();modeNote();
+  if(prefs.mode==='text'&&media){audioFinish()}
+  if(was)start();
+  render();
+};
+$('dlAudio').onclick=()=>dlAudio(iv);
+$('dlTxt').onclick=()=>dlText(iv);
+$('shareAll').onclick=()=>shareAll(iv);
+$('copyTxt').onclick=()=>copyText(iv);
+$('finish').onclick=finishInterview;
+$('svAudio').onclick=()=>dlAudio(lib.list.find(v=>v.id===lib.active));
+$('svTxt').onclick=()=>dlText(lib.list.find(v=>v.id===lib.active));
+$('svShare').onclick=()=>shareAll(lib.list.find(v=>v.id===lib.active));
+$('svNew').onclick=async()=>{$('saved').close();await startNew($('svNext').value)};
+$('libNew').onclick=async()=>{$('lib').close();await startNew('')};
+$('libAll').onclick=async()=>{
+  const all=[...lib.list].filter(v=>v.segs.length).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  if(!all.length){toast('No hay transcripciones todavía');return}
+  const text=all.map(v=>build(v,false)).join('\n\n==============================\n\n');
+  const f=new File([text],`entrevistas-todas-${new Date().toISOString().slice(0,10)}.txt`,{type:'text/plain'});
+  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Todas las entrevistas'});return}}catch(e){if(e.name==='AbortError')return}
+  download(f,f.name);
+};
+
+/* guía: botones y gestos */
 $('pDone').onclick=()=>{
   const i=curIndex();if(i<0)return;const q=guide[i];
-  state.qs[q.id]={st:'done',t:now()};
-  if(state.pdiv)state.segs.push(state.pdiv); // la anterior quedó sin respuesta transcripta
-  state.pdiv={kind:'q',qid:q.id,num:i+1,text:q.text,t:now()};
-  if(!recording){state.segs.push(state.pdiv);state.pdiv=null}
+  iv.qs[q.id]={st:'done',t:now()};
+  if(iv.pdiv)iv.segs.push(iv.pdiv); // la anterior quedó sin respuesta transcripta
+  iv.pdiv={kind:'q',qid:q.id,num:i+1,text:q.text,t:now()};
+  if(!recording||prefs.mode==='audio'){iv.segs.push(iv.pdiv);iv.pdiv=null}
   setSpeaker('B');forceNew=true;advance(i);render();
   if(navigator.vibrate)navigator.vibrate(20);
 };
-$('pSkip').onclick=()=>{const i=curIndex();if(i<0)return;state.qs[guide[i].id]={st:'skip'};advance(i);toast('Pregunta saltada')};
-$('pPrev').onclick=()=>{const i=curIndex(),j=i<0?guide.length-1:i-1;if(j>=0){state.cur=guide[j].id;save();renderPrompt()}};
-$('pRetry').onclick=()=>{guide.forEach(q=>{if(qStatus(q.id)==='skip')delete state.qs[q.id]});state.cur=null;save();renderPrompt()};
-$('pEdit').onclick=openGuide;
-$('guideBtn').onclick=openGuide;
-$('pToggle').onclick=()=>{promptOpen=!promptOpen;try{localStorage.setItem('transcriptor-guia-abierta',promptOpen?'1':'0')}catch(e){}renderPrompt()};
-$('closeGuide').onclick=()=>$('guideDlg').close();
-$('guideDlg').addEventListener('click',e=>{if(e.target===$('guideDlg'))$('guideDlg').close()});
+$('pSkip').onclick=()=>{const i=curIndex();if(i<0)return;iv.qs[guide[i].id]={st:'skip'};advance(i);toast('Pregunta saltada')};
+$('pPrev').onclick=()=>{const i=curIndex();goTo(i<0?guide.length-1:i-1)};
+$('pFwd').onclick=()=>{const i=curIndex();if(i>=0)goTo(i+1)};
+$('pRetry').onclick=()=>{guide.forEach(q=>{if(qStatus(q.id)==='skip')delete iv.qs[q.id]});iv.cur=null;save();renderPrompt()};
+$('pEdit').onclick=$('guideBtn').onclick=$('pNum').onclick=openGuide;
+$('pToggle').onclick=()=>{promptOpen=!promptOpen;write('te-guia-abierta',promptOpen);renderPrompt()};
+let sx=null,sy=null;
+$('prompt').addEventListener('touchstart',e=>{const t=e.touches[0];sx=t.clientX;sy=t.clientY},{passive:true});
+$('prompt').addEventListener('touchend',e=>{
+  if(sx===null)return;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;sx=null;
+  if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx))return;
+  const i=curIndex();
+  if(dx<0&&i>=0)goTo(i+1);else if(dx>0)goTo(i<0?guide.length-1:i-1);
+},{passive:true});
 $('gAdd').onclick=()=>{
   const lines=$('gNew').value.split(/\n+/).map(s=>s.replace(/^\s*(\d+\s*[.)\-:]|[-•*·])\s*/,'').trim()).filter(Boolean);
   if(!lines.length){toast('Escribí al menos una pregunta');return}
   lines.forEach(text=>guide.push({id:uid(),text}));saveGuide();$('gNew').value='';renderGuide();renderPrompt();
   toast(lines.length===1?'Pregunta agregada':lines.length+' preguntas agregadas');
 };
-$('gReset').onclick=()=>{state.qs={};state.cur=null;state.pdiv=null;save();renderGuide();renderPrompt();toast('Progreso reiniciado')};
+$('gReset').onclick=()=>{iv.qs={};iv.cur=null;iv.pdiv=null;save();renderGuide();renderPrompt();toast('Progreso reiniciado')};
 let gArm=null;
 $('gClear').onclick=()=>{
   if(!gArm){$('gClear').textContent='Tocá de nuevo para vaciar';gArm=setTimeout(()=>{gArm=null;$('gClear').textContent='Vaciar guía'},3000);return}
   clearTimeout(gArm);gArm=null;$('gClear').textContent='Vaciar guía';
-  guide=[];state.qs={};state.cur=null;state.pdiv=null;saveGuide();save();renderGuide();renderPrompt();
+  guide=[];lib.list.forEach(v=>{v.qs={};v.cur=null});iv.pdiv=null;saveGuide();save();renderGuide();renderPrompt();
 };
-$('markLast').onclick=()=>{const s=[...state.segs].reverse().find(x=>x.kind!=='q');if(!s){toast('Todavía no hay texto');return}s.star=true;save();render();toast('Marcado ★')};
-$('menuBtn').onclick=()=>{meta();$('menu').showModal()};
-$('closeMenu').onclick=()=>$('menu').close();
-$('menu').addEventListener('click',e=>{if(e.target===$('menu'))$('menu').close()});
-$('shareTxt').onclick=shareText;
-$('copyTxt').onclick=copyText;
-$('dlMd').onclick=()=>download(new Blob([build(true)],{type:'text/markdown;charset=utf-8'}),`entrevista-${stamp()}.md`);
-$('dlAudio').onclick=async()=>{
-  if(!audioBlob)return;
-  const ext=audioBlob.type.includes('mp4')?'m4a':audioBlob.type.includes('ogg')?'ogg':'webm',name=`entrevista-${stamp()}.${ext}`;
-  try{const f=new File([audioBlob],name,{type:audioBlob.type});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return}}catch(e){if(e.name==='AbortError')return}
-  download(audioBlob,name);
-};
-$('nameA').value=state.names.A;$('nameB').value=state.names.B;$('lang').value=state.lang;
-$('saveAudio').checked=!isMobile;
-$('nameA').oninput=e=>{state.names.A=e.target.value.trim()||'Entrevistador';save();labels();render()};
-$('nameB').oninput=e=>{state.names.B=e.target.value.trim()||'Entrevistado';save();labels();render()};
-$('lang').onchange=e=>{state.lang=e.target.value;save();const was=recording;if(rec){rec.onend=null;try{rec.abort()}catch(_){}}rec=null;if(was){rec=makeRec();try{rec.start()}catch(_){}}};
-function askClear(){
-  const c=$('confirm');
-  c.innerHTML='<div class="grid2"><button class="btn danger" id="yes">Sí, borrar todo</button><button class="btn" id="no">Cancelar</button></div>';
-  const reset=()=>{c.innerHTML='<button class="btn danger" id="clear" style="width:100%">Nueva entrevista (borrar esta)</button>';$('clear').onclick=askClear};
-  $('no').onclick=reset;
-  $('yes').onclick=()=>{stop();state={segs:[],elapsed:0,date:new Date().toISOString(),names:state.names,lang:state.lang,qs:{},cur:null,pdiv:null};renderPrompt();
-    chunks=[];audioBlob=null;$('dlAudio').disabled=true;$('clock').textContent='00:00:00';save();render();meta();reset();$('menu').close();toast('Lista para una nueva entrevista')};
-}
-$('clear').onclick=askClear;
 
 document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'){save();return}
   if(!recording)return;
-  if(document.visibilityState==='hidden'){save()}
-  else{lockScreen();try{rec.start()}catch(e){}warn('Si salís del navegador o se apaga la pantalla, el celular deja de escuchar. Ya retomé la transcripción.')}
+  lockScreen();
+  if(prefs.mode!=='audio'&&rec){try{rec.start()}catch(e){}}
+  if(media&&media.state==='inactive')warn('El celular cortó la grabación al salir del navegador. Tocá pausa y grabar de nuevo para seguir.');
 });
 window.addEventListener('pagehide',save);
 
-if(!SR)warn('Este navegador no tiene reconocimiento de voz. En Android usá Chrome; en iPhone, Safari (con Siri/Dictado activado en Ajustes).');
+if(prefs.mode!=='audio'&&!SR)warn('Este navegador no tiene reconocimiento de voz. En Android usá Chrome; en iPhone, Safari. También podés elegir “Solo grabar audio” en ⋯.');
 else if(location.protocol==='file:'&&isMobile)warn('Abriste el archivo localmente: en el celular el micrófono solo funciona si la página está publicada en una dirección https://.');
-labels();$('clock').textContent=fmt(state.elapsed);render();renderPrompt();
+modeNote();labels();render();renderPrompt();
 </script>
 </body>
 </html>
